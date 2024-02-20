@@ -1,7 +1,168 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Homework 1 index.html here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184/284A Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184/284A: Computer Graphics and Imaging, Spring 2024</h1>
+<h1 align="middle">Homework 1: Rasterizer</h1>
+<h2 align="middle">Alexander Sun</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this homework, we explored how to sample signals and avoid aliasing, applied to drawing triangles to a computer screen. To do this, we implemented supersampling, pixel sampling, and level sampling. We also implemented transforms and barycentric coordinates. I think the most interesting idea I learned was how a low-pass filter can be used for anti-aliasing.
+</p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+<p>To rasterize each triangle, I iterate through each pixel in the bounding box of the triangle. For each pixel, I determine whether its center is within the triangle. If so, I color it in. Since my algorithm only iterates through the bounding box, it is no worse than one that checks each sample within the bounding box of the triangle.</p>
+
+<img src="images/screenshot_2-18_16-51-5.png" align="middle" width=100%/>
+        <figcaption align="middle">png screenshot of basic/test4.svg</figcaption>
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+<p>To implement supersampling, the main thing I changed compared to Task 1 was the sample buffer. This sample buffer takes multiple samples within each pixel, in essence storing a higher-resolution image. To rasterize a triangle, I compute the color at each sampled point and store it in the sample buffer. Then, I resolve it to the framebuffer by taking the average sample value in each pixel. Supersampling is useful because it approximately filters out the higher frequencies in our triangles, which reduces aliasing. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/screenshot_2-18_19-51-26.png" align="middle" width="400px"/>
+        <figcaption align="middle">Supersample rate 1 per pixel</figcaption>
+      </td>
+      <td>
+        <img src="images/screenshot_2-18_19-51-32.png" align="middle" width="400px"/>
+        <figcaption align="middle">Supersample rate 4 per pixel</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/screenshot_2-18_19-51-38.png" align="middle" width="400px"/>
+        <figcaption align="middle">Supersample rate 16 per pixel</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>We see that taking more samples per pixel reduces jaggies. This is because taking more samples better approximates using a box filter, which is the theoretical motivation that filters higher frequencies. Thus, as we better approximate a box filter, we better reduce aliasing.</p>
+
+<h3 align="middle">Part 3: Transforms</h3>
+
+<p>I was trying to draw a cubeman doing ballet.</p>
+
+<img src="images/screenshot_2-18_20-36-30.png" align="middle" width=100%/>
+
+
+
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+
+<p>Barycentric coordinates define points within a triangle as a weighted sum of the verticies of the triangle. The three parameters of this weighed sum, which we call alpha, beta, and gamma, are useful as a way to interpolate within a triangle. For example, if we have some metadata at each of the verticies, then for any point within the triangle, we can take the weighed average of the metadata using alpha, beta, and gamma. As an example, consider the following image:</p>
+
+<img src="images/screenshot_2-19_15-54-37.png" align="middle" width=100%/>
+
+<p>At the three verticies we have red, green, and blue. We use the method of barycentric coordinates described above to calculate the color at each point within the triangle.</p>
+
+<img src="images/screenshot_2-19_15-35-12.png" align="middle" width=100%/>
+<figcaption align="middle">png screenshot of basic/test4.svg</figcaption>
+
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+
+<p>Suppose you have a function that is defined at a finite set of points. Then you could use pixel sampling to basically extend the function to be continuous. When applied to texture mapping, we might want to sample a point in screen space, which corresponds to a point (u,v) in texture space. However, (u,v) may not necessarily have a pixel value, since it could be offset from the pixels. With nearest pixel sampling, we would use the rgb value of the nearest pixel. With bilinear sampling, we would take the "weighted average" of the four closest pixels. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/screenshot_2-20_13-13-27.png" align="middle" width="400px"/>
+        <figcaption align="middle">nearest sampling at 1 sample per pixel</figcaption>
+      </td>
+      <td>
+        <img src="images/screenshot_2-20_13-13-34.png" align="middle" width="400px"/>
+        <figcaption align="middle">nearest sampling at 16 samples per pixel</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/screenshot_2-20_13-13-42.png" align="middle" width="400px"/>
+        <figcaption align="middle">bilinear sampling at 1 sample per pixel</figcaption>
+      </td>
+      <td>
+        <img src="images/screenshot_2-20_13-13-47.png" align="middle" width="400px"/>
+        <figcaption align="middle">bilinear sampling at 16 samples per pixel</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>With bilinear sampling, the white longitudinal line is much clearer compared to nearest sampling. This is because, for minified images, nearest sampling will "skip" texels, while bilinear sampling can compile more texel data, skipping less. I think that in this case, nearest sampling skipped over the longitude line, while bilinear sampling didn't. </p>
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+<p>The overarching idea is we have a signal that we want to sample without too much aliasing. In this case, we have a mapping from screen-space to texture-space, so we can imagine the inverse map from texture space to screen-space. The texture mapped back into screen-space is the signal we are trying to sample in screen-space. Since the mapping is not necessarily linear, we will have different "frequencies" at different screen pixels. Level sampling is a way to approximately filter out the higher frequencies over the entire screen-space. For each screen pixel, we use the average texel value over the range of texels that get mapped to the screen pixel, approximately, using a mipmap. More concretely, the way we implemented this is to compute a mipmap as described in lecture, then for each pixel, we can approximate the amount of texel space that gets mapped to the pixel in order to determine which level of the mipmap to use.</p>
+
+<p>Supersampling can have very good anti-aliasing results, but it takes a lot of compute, especially when the samples per pixel is high. For extremely zoomed out images, a large amount of samples per pixel may be necessary to accurately "blur" the image, so supersampling is not the best method in that case. In addition, in my implementation, supersampling's memory use is directly proportional to the number of samples per pixel, which is also inefficient.</p>
+
+<p>Level sampling is good for minification, since it computes downsampling. Level sampling has very good performance, since the initial mipmap computation is not very expensive (only uses 4/3 the original texture memory) and each screen pixel takes roughly O(1) time to compute. Its results are also pretty good in most cases. However, there are cases where level sampling is not a good approximation for the "box filter to filter high frequencies" idea. Example: if the jacobian stretchiness is very rectangular (stretched in one direction and not in another), the mipmap is not a good approximation, since mipmap only computes roughly square stretches.</p>
+
+<p>Pixel sampling is good for magnified images, since it can infer intermediate pixel values. Different interpolation methods can be more costly than just nearest neighbor by a constant factor.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/screenshot_2-20_12-37-3.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_ZERO, P_NEAREST</figcaption>
+      </td>
+      <td>
+        <img src="images/screenshot_2-20_12-37-14.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_ZERO, P_LINEAR</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/screenshot_2-20_12-37-23.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_NEAREST, P_NEAREST</figcaption>
+      </td>
+      <td>
+        <img src="images/screenshot_2-20_12-37-30.png" align="middle" width="400px"/>
+        <figcaption align="middle">L_NEAREST, P_LINEAR</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+</body>
 </html>
