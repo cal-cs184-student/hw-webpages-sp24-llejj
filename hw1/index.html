@@ -99,7 +99,9 @@
 
 <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
 
-<p>Suppose you have a function that is defined at a finite set of points. Then you could use pixel sampling to basically extend the function to be continuous. When applied to texture mapping, we might want to sample a point in screen space, which corresponds to a point (u,v) in texture space. However, (u,v) may not necessarily have a pixel value, since it could be offset from the pixels. With nearest pixel sampling, we would use the rgb value of the nearest pixel. With bilinear sampling, we would take the "weighted average" of the four closest pixels. </p>
+<p>Suppose you have a function that is defined at a finite set of points. Then you could use pixel sampling to basically extend the function to be continuous. When applied to texture mapping, we might want to sample a point in screen space, which corresponds to a point (u,v) in texture space. However, (u,v) may not necessarily have a pixel value, since it could be offset from the pixels. So you estimate its value. With nearest pixel sampling, we would use the rgb value of the nearest pixel. With bilinear sampling, we would take the "weighted average" of the four closest pixels. </p>
+
+<p>In my implementation, for a pixel in screenspace, I find its (u,v). Then, I either use nearest pixel sampling or bilinear sampling to get its color value.</p>
 
 <div align="middle">
   <table style="width=100%">
@@ -127,11 +129,13 @@
   </table>
 </div>
 
-<p>With bilinear sampling, the white longitudinal line is much clearer compared to nearest sampling. This is because, for minified images, nearest sampling will "skip" texels, while bilinear sampling can compile more texel data, skipping less. I think that in this case, nearest sampling skipped over the longitude line, while bilinear sampling didn't. </p>
+<p>With bilinear sampling, the white longitudinal line is much clearer compared to nearest sampling. This is because, for minified images, nearest sampling will "skip" texels, while bilinear sampling can take into account more texel data, skipping less. I think that in this case, nearest sampling skipped over the longitude line, while bilinear sampling didn't. </p>
 
 <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
 
-<p>The overarching idea is we have a signal that we want to sample without too much aliasing. In this case, we have a mapping from screen-space to texture-space, so we can imagine the inverse map from texture space to screen-space. The texture mapped back into screen-space is the signal we are trying to sample in screen-space. Since the mapping is not necessarily linear, we will have different "frequencies" at different screen pixels. Level sampling is a way to approximately filter out the higher frequencies over the entire screen-space. For each screen pixel, we use the average texel value over the range of texels that get mapped to the screen pixel, approximately, using a mipmap. More concretely, the way we implemented this is to compute a mipmap as described in lecture, then for each pixel, we can approximate the amount of texel space that gets mapped to the pixel in order to determine which level of the mipmap to use.</p>
+<p>The overarching idea is we have a signal that we want to sample without too much aliasing. In this case, we have a mapping from screen-space to texture-space, so we can imagine the inverse map from texture space to screen-space. The texture mapped back into screen-space is the signal we are trying to sample in screen-space. Since the mapping is not necessarily linear, we will have different "frequencies" at different screen pixels. Level sampling is a way to approximately filter out the higher frequencies over the entire screen-space. For each screen pixel, we want to approximate the average texel value over the range of texels that get mapped to the screen pixel.</p>
+
+<p>In my implementation, I calculated the mipmap for the texture. Then, for a pixel in screenspace, I calculate its (u,v) coordinates, as well as the (u,v) coordinates of its two neighboring pixels. Using these values, I can estimate this pixel's footprint in texture space, and thus which level of the mipmap I should use. At this point, if we're using L_ZERO, just sample from level 0 of the mipmap. If we're using L_NEAREST, then round to the nearest non-negative integer and sample from that mipmap. Lastly, if using L_LINEAR, then sample from the two nearest mipmap levels, and interpolate between their color values.</p>
 
 <p>Supersampling can have very good anti-aliasing results, but it takes a lot of compute, especially when the samples per pixel is high. For extremely zoomed out images, a large amount of samples per pixel may be necessary to accurately "blur" the image, so supersampling is not the best method in that case. In addition, in my implementation, supersampling's memory use is directly proportional to the number of samples per pixel, which is also inefficient.</p>
 
