@@ -1,7 +1,320 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Homework 2 index.html here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    background-color: white;
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+  kbd {
+    color: #121212;
+  }
+</style>
+<title>CS 184 Mesh Edit</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2018</h1>
+<h1 align="middle">Project 2: Mesh Edit</h1>
+<h2 align="middle">Alexander Sun</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>
+    In this assignment, we explore Bezier curves and mesh operations. For Bezier curves and surfaces, we implement de Casteljau's algorithm. For mesh operations, we use the Halfedge data structure to traverse the mesh, allowing us to flip and split edges. We used Halfedge to implement Loop subdivision for triangle meshes. From this assignment, I've learned how to model smooth curves and use topological datastructures.  
+</p>
+<br>
+
+
+<h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+<h3 align="middle">Part 1: Bezier Curves with 1D de Casteljau Subdivision</h3>
+
+
+<p>
+  De Casteljau's algorithm calculates a point on a Bezier curve parameterized by t. It does this by lerping the set of control points to get an intermediate sets of points, which get lerped again, and so on until we reach a single point. I implemented one level of this process, by taking as input a set of points and outputting its set of lerps.
+</p>
+<br>
+
+<!-- Example of including multiple figures -->
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part1_l0.png" align="middle" width="400px"/>
+        <figcaption>Level 0</figcaption>
+      </td>
+      <td>
+        <img src="images/part1_l1.png" align="middle" width="400px"/>
+        <figcaption>Level 1</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr align="center">
+      <td>
+        <img src="images/part1_l2.png" align="middle" width="400px"/>
+        <figcaption>Level 2</figcaption>
+      </td>
+      <td>
+        <img src="images/part1_l3.png" align="middle" width="400px"/>
+        <figcaption>Level 3</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr align="center">
+      <td>
+        <img src="images/part1_l4.png" align="middle" width="400px"/>
+        <figcaption>Level 4</figcaption>
+      </td>
+      <td>
+        <img src="images/part1_l5.png" align="middle" width="400px"/>
+        <figcaption>Level 5</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+
+<div align="middle">
+  <img src="images/part1_other.png" align="middle" width="50%">
+  <figcaption>Slightly different Bezier curve</figcaption>
+</div>
+<br>
+
+<h3 align="middle">Part 2: Bezier Surfaces with Separable 1D de Casteljau</h3>
+<p>
+    For Bezier surfaces, we have a grid of control points. To calculate a point on the Bezier surface parameterized by (u, v), we treat each row as a Bezier curve, applying de Casteljau to each row with parameter u, which yields a set of points. We use these new points as the control points of another Bezier curve, thus applying de Casteljau with parameter v to get the final answer.
+
+    In my implementation, I called evaluate1D() to compute the Bezier curve of each row, then I used evalute1D() on those resulting points to get the final answer.
+</p>
+<br>
+
+<div align="middle">
+  <img src="images/part2.png" align="middle" width="50%">
+  <figcaption>Screenshot of bez/teapot.bez</figcaption>
+</div>
+<br>
+
+
+<h2 align="middle">Section II: Triangle Meshes and Half-Edge Data Structure</h2>
+
+<h3 align="middle">Part 3: Area-Weighted Vertex Normals</h3>
+
+<p>
+  To compute the area-weighted vertex normal of a single vertex, I first iterate over all the halfedges pointing away from the vertex. This is because each such halfedge corresponds to a face. For each face, I want its unit normal scaled by its area. So I get the two other verticies of the face. Lastly, I calculate the unit normal vector using the cross product, and the area using the cross product. 
+  
+  All the while, I'm keeping a running sum of all the area-weighted normals. I add the area*normal of the current face to the running sum. In the end, I return this sum normalized to a unit vector.
+</p>
+<br>
+
+<div align="middle">
+  <img src="images/part3_flat.png" align="middle" width="50%">
+  <figcaption>dae/teapot.dae with flat shading</figcaption>
+</div>
+<br>
+
+<div align="middle">
+  <img src="images/part3_phong.png" align="middle" width="50%">
+  <figcaption>dae/teapot.dae with Phong shading</figcaption>
+</div>
+<br>
+
+<h3 align="middle">Part 4: Edge Flip</h3>
+<p>
+    I followed a guide recommended on Edstem at http://15462.courses.cs.cmu.edu/fall2015content/misc/HalfedgeEdgeOpImplementationGuide.pdf. I followed their process of drawing before and after diagrams, collecting elements, and re-assigning them. Thus, my coding went smoothly and there was minimal debugging needed. I'll include my diagrams for completeness
+
+    <div align="middle">
+      <img src="images/part4_diagram.jpg" align="middle" width="50%">
+      <figcaption>Edge-flip diagram</figcaption>
+    </div>
+    <br>
+
+    <div align="middle">
+      <table style="width:100%">
+        <tr align="center">
+          <td>
+            <img src="images/part4_before.png" align="middle" width="400px"/>
+            <figcaption>Before edge flips</figcaption>
+          </td>
+          <td>
+            <img src="images/part4_flipped.png" align="middle" width="400px"/>
+            <figcaption>After edge flips</figcaption>
+          </td>
+        </tr>
+        <br>
+        <br>
+      </table>
+    </div>
+    <br>
+
+
+</p>
+<br>
+
+
+<h3 align="middle">Part 5: Edge Split</h3>
+<p>
+  I followed a guide recommended on Edstem at http://15462.courses.cs.cmu.edu/fall2015content/misc/HalfedgeEdgeOpImplementationGuide.pdf. I followed their process of drawing before and after diagrams, collecting elements, creating new elements, and re-assigning them. Thus, my coding went smoothly and there was minimal debugging needed. I'll include my diagrams for completeness
+</p>
+<br>
+
+<div align="middle">
+  <img src="images/part5_diagram.jpg" align="middle" width="50%">
+  <figcaption>Edge-split diagram</figcaption>
+</div>
+<br>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part5_before.png" align="middle" width="400px"/>
+        <figcaption>Before edge splits</figcaption>
+      </td>
+      <td>
+        <img src="images/part5_split.png" align="middle" width="400px"/>
+        <figcaption>After edge splits</figcaption>
+      </td>
+    </tr>
+    <br>
+    <br>
+  </table>
+</div>
+<br>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part5_before.png" align="middle" width="400px"/>
+        <figcaption>Before edge flips and splits</figcaption>
+      </td>
+      <td>
+        <img src="images/part5_combo.png" align="middle" width="400px"/>
+        <figcaption>After edge flips and splits</figcaption>
+      </td>
+    </tr>
+    <br>
+    <br>
+  </table>
+</div>
+<br>
+
+
+<h3 align="middle">Part 6: Loop Subdivision for Mesh Upsampling</h3>
+
+<p>
+    To implement loop subdivision, I followed the suggested implementation. First, I calculated each current vertex's new position and stored it in newPosition. Then, I calculated each new vertex's position by iterating over each edge and storing the result in the edge's newPosition parameter. Then, I split each edge. Then, I flipped the new edges that connected old and new verticies. Lastly, I updated each vertex's position to be its newPosition. One implementation trick I used was, in order to decide whether to split an edge, I would check whether both its verticies were old. If so, I concluded that it had not been split yet, so I split it. 
+</p>
+<br>
+
+
+<p>
+    Now let's discuss how loop subdivision affects sharp edges and corners. After loop subdivision, sharp edges and corners become less prominent, since loop subdivision smooths then out. We could reduce this by pre-splitting edges so that loop subdivision can't make such drastic changes, and the general shape of corners/edges will remain. 
+</p>
+<br>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part6_edge_1.png" align="middle" width="400px"/>
+        <figcaption>Cube edge before loop subdivision</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_edge_6.png" align="middle" width="400px"/>
+        <figcaption>Cube edge after loop subdivision</figcaption>
+      </td>
+    </tr>
+    <br>
+    <br>
+  </table>
+</div>
+<br>
+
+<p>We see in the screenshots above how the edge of the cube becomes rounded. However if we presplit some edges, we have the following result</p>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part6_presplit_edge_1.png" align="middle" width="400px"/>
+        <figcaption>Presplit cube edge before loop subdivision</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_presplit_edge_6.png" align="middle" width="400px"/>
+        <figcaption>Presplit cube edge after loop subdivision</figcaption>
+      </td>
+    </tr>
+    <br>
+    <br>
+  </table>
+</div>
+<br>
+
+<p>We see that the edge remains distinguishable.</p>
+
+<p>
+    Now, let's discuss how the cube becomes asymmetric after loop subdivision. The reason this happens is because loop subdivision calculates the new position of each vertex the same way, regardless of how large each triangle is. So vertices of larger triangles will likely change positions more due to being more heavily weighted by verticies further away. This is clear just from how not all vertices have the same valence, despite the cube being symmetric, so that different verticies are updated differently. However, if we use a symmetric topology, then the loop subdivision process should subdivide the cube symmetrically. I preprocess so that each side and vertex of the cube is identical.
+</p>
+<br>
+
+<div align="middle">
+  <table style="width:100%">
+    <tr align="center">
+      <td>
+        <img src="images/part6_cube_1.png" align="middle" width="400px"/>
+        <figcaption>Cube before loop subdivision</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_cube_6.png" align="middle" width="400px"/>
+        <figcaption>Cube after loop subdivision</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr align="center">
+      <td>
+        <img src="images/part6_cube_presplit.png" align="middle" width="400px"/>
+        <figcaption>Presplit cube before loop subdivision</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_cube_presplit_5.png" align="middle" width="400px"/>
+        <figcaption>Presplit cube after loop subdivision</figcaption>
+      </td>
+    </tr>
+    <br>
+  </table>
+</div>
+<br>
+
+
+</body>
 </html>
